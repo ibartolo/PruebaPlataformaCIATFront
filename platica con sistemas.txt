@@ -1,0 +1,21 @@
+[10:32 a.m., 21/11/2026] +52 1 782 883 8587: 1.- tenemos 2 hosting uno con 3gb de ram y otro con 512gb
+2 y 3.- en el hosting 1 las aplicaciones están segmentadas en 3 pool en el hosting 2 tiene un solo pool
+4.- 
+a) Las clases que se dan semana a semana están en el aula de classroom y no se toman atraves de un sistema propio se dan por Zoom las clases y se comparten las grabaciones por Drive publicadas en Classroom
+b) Se cuenta con una página de desarrollo en php que está publicada en el servidor local para acceso a videocursos.
+c) Los pagos se manejan atraves del control escolar y se toman por transferencias, enlaces de pagos de MP, Paypal y Stripe cargado manualmente o en automático se detectan los pagos si pagan atraves de la página oficial de ciat usando MP o Paypal 
+5.- el simulador tiene 2 formas …
+[10:34 a.m., 21/11/2026] +52 1 782 883 8587: https://www.ciatsoftware.com/AppsLogin
+[10:34 a.m., 21/11/2026] +52 1 782 883 8587: https://www.ciatsoftware.com/Apps/Simulador3D_PLC
+[10:36 a.m., 21/11/2026] +52 1 782 883 8587: https://www.ciatsoftware.com/AppsLogin
+En esta página si quiere entrar a moverle usa esta cuenta 
+CPR25-0049
+[10:36 a.m., 21/11/2026] +52 1 782 883 8587: La contraseña es la misma matrícula
+[10:46 a.m., 21/11/2026] Ivan 😎: 6.-Comentaste que ya tenías actualizado un sistema de pagos que podía decidir si irse por MP o por Paypal, ese puede ser consumido por una api?
+7.- Se le tiene que mandar ya los datos de la tarjeta en el reuqets o que es lo que necesita?
+8.- escuché que ya tenía un drm para la protección de los vídeos ese cómo funciona?
+9.- ya tienen algún servicio de streaming contratado ?
+[11:14 a.m., 21/11/2026] +52 1 782 883 8587: 6. En MercadoPago ya está consumido por la api que me ayudaste hace tiempo y el de Paypal lo implementamos directo en la página de ciat pero tenemos planeado migrarlo a la misma api
+7. En paypal nosotros no obtenemos los datos de la tarjeta, paypal abre su propia ventana de pago en donde ya ingresan su tarjeta o mediante su cuenta, PayPal se encarga directo de realizar el cobro 
+8. No es un drm la app de videocursos lo que hace fragmentos del video HLS cifrados, ese cifrado no es DRM. La llave (enc.key) se le entrega al navegador, y cualquier grabador de pantalla, o quien copie la llave, obtiene el video. Lo único que hace es evitar que alguien baje los archivos directamente.
+9. No tenemos ningún servicio de streaming

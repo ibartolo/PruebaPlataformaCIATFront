@@ -1,0 +1,33 @@
+# CONTEXTO ARQUITECTÓNICO DETALLADO: PLATAFORMA CIATSOFTWARE
+
+## 1. BACKEND: MONOLITO MODULAR CON DDD (.NET Core)
+La API es única (api.ciatsoftware.com) y se despliega en SmarterASP.NET. Internamente, la solución de Visual Studio debe estar estrictamente dividida por capas y por Dominios (Bounded Contexts).
+
+### Estructura de la Solución (.sln):
+1. **CIAT.API**: El proyecto host. Solo contiene los Controladores (endpoints), configuración de Program.cs, Middlewares (CORS, Auth) e Inyección de Dependencias.
+2. **CIAT.Aplicacion**: Casos de uso, DTOs, Interfaces de servicios e interfaces de repositorios.
+3. **CIAT.Dominio**: El núcleo. Entidades, Objetos de Valor (Value Objects), Agregados y reglas de negocio puras. NO tiene dependencias externas (ni EF Core, ni SQL).
+4. **CIAT.Infraestructura**: Implementación de repositorios, DbContext (EF Core), integraciones con APIs externas (Mercado Pago, VdoCipher, WhatsApp).
+
+### Bounded Contexts (Dominios dentro de CIAT.Dominio y CIAT.Aplicacion):
+*   **Usuarios / Auth**: Registro, Login, gestión de perfiles, preferencias de idioma (i18n).
+*   **Pagos**: Lógica de Pago Único, estados de transacción, procesamiento de Webhooks de Mercado Pago/PayPal.
+*   **Cursos**: Catálogo, módulos, lecciones, recursos de apoyo (PDFs), progreso del alumno.
+*   **Simulador**: Generación de licencias (tokens), validación de dispositivos, tracking de prácticas completadas.
+*   **Constancias**: Generación de PDFs, asignación de folios únicos, validación de proyectos finales.
+*   **Valeria**: Lógica de chat, historial de conversaciones, derivación a asesores humanos.
+
+## 2. FRONTEND: MONOREPO CON NX Y MÓDULOS POR SUBDOMINIO
+Se utilizará Nx para gestionar un Monorepo. Cada subdominio será una aplicación Angular independiente (Standalone Components) que se despliega por separado en SmarterASP.NET.
+
+### Estructura del Monorepo (Nx):
+```text
+/ciat-workspace
+ ├── /apps
+ │   ├── portal/       (app.ciatsoftware.com - Login, Dashboard, Pagos)
+ │   ├── curso/        (curso.ciatsoftware.com - Reproductor, Lecciones)
+ │   ├── simulador/    (simulador.ciatsoftware.com - Contenedor del simulador)
+ │   └── admin/        (admin.ciatsoftware.com - Carga de contenido y gestión)
+ └── /libs
+     ├── shared-ui/    (Componentes visuales compartidos)
+     └── shared-core/  (Servicios, modelos, interceptores HTTP)

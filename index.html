@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0A2A5E">
+    <title>CIATSOFTWARE - Reproductor de Lección</title>
+    <style>
+        /* ============================================================
+           CIATSOFTWARE · Reproductor de lección
+           Mobile-first · responsive (móvil, tablet, plegable, desktop)
+           ============================================================ */
+
+        :root {
+            --primary: #0A2A5E;
+            --primary-2: #123B7A;
+            --accent: #0055B8;
+            --accent-2: #0070E0;
+            --bg-dark: #0F172A;
+            --bg: #F5F7FA;
+            --card: #FFFFFF;
+            --border: #E2E8F0;
+            --text: #1E293B;
+            --muted: #64748B;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+
+            --header-h: 60px;
+            --sidebar-w: 280px;
+            --resizer-w: 10px;
+            --radius: 10px;
+            --shadow: 0 1px 3px rgba(15,23,42,.08);
+            --shadow-lg: 0 10px 30px rgba(15,23,42,.16);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { -webkit-text-size-adjust: 100%; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        button { font-family: inherit; }
+        a { color: var(--accent); }
+
+        /* ---------- Scrollbars finos ---------- */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--primary);
+            color: #fff;
+            height: var(--header-h);
+            flex-shrink: 0;
+            padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+            box-shadow: 0 2px 6px rgba(0,0,0,.12);
+            z-index: 300;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .menu-toggle {
+            background: none; border: none; color: #fff;
+            font-size: 22px; cursor: pointer; line-height: 1;
+            width: 44px; height: 44px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .menu-toggle:hover { background-color: rgba(255,255,255,.12); }
+        .menu-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+        .brand { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
+        .brand-logo { font-weight: 700; font-size: 17px; letter-spacing: .5px; white-space: nowrap; }
+        .brand-sub {
+            font-size: 11px; color: #A9C0E8; font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .user-name { font-size: 14px; font-weight: 500; }
+        .user-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background-color: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px; flex-shrink: 0;
+            border: 2px solid rgba(255,255,255,.25);
+        }
+
+        /* ============================================================
+           CUERPO: sidebar + contenido en fila (desktop) / columna (móvil)
+           ============================================================ */
+        .app-body { display: flex; flex: 1; min-height: 0; }
+
+        /* ============================================================
+           SIDEBAR  (móvil: drawer overlay · desktop: panel inline)
+           ============================================================ */
+        .sidebar {
+            background-color: var(--bg-dark);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            /* MOBILE: drawer fijo */
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            width: min(var(--sidebar-w), 86vw);
+            transform: translateX(-105%);
+            transition: transform .28s ease;
+            z-index: 400;
+            box-shadow: var(--shadow-lg);
+        }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255,255,255,.1);
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+            padding-top: max(16px, env(safe-area-inset-top));
+        }
+        .sidebar-header .title {
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; color: #94A3B8;
+        }
+        .sidebar-close {
+            background: none; border: none; color: #94A3B8; font-size: 20px;
+            cursor: pointer; width: 40px; height: 40px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .sidebar-close:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+        /* Progreso del curso */
+        .course-progress { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
+        .course-progress .row {
+            display: flex; justify-content: space-between; font-size: 12px;
+            color: #CBD5E1; margin-bottom: 8px;
+        }
+        .course-progress .bar {
+            height: 6px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden;
+        }
+        .course-progress .fill {
+            height: 100%; width: 45%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            border-radius: 3px;
+        }
+
+        .accordion { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+        .accordion-item { border-bottom: 1px solid rgba(255,255,255,.05); }
+        .accordion-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 16px; cursor: pointer; font-size: 14px; font-weight: 600;
+            transition: background .15s; gap: 8px;
+        }
+        .accordion-header:hover { background-color: rgba(255,255,255,.05); }
+        .accordion-header .icon { font-size: 11px; color: #94A3B8; transition: transform .25s; }
+        .accordion-item.active .accordion-header .icon { transform: rotate(90deg); }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height .3s ease; background: rgba(0,0,0,.22); }
+        .accordion-item.active .accordion-content { max-height: 600px; }
+        .accordion-content ul { list-style: none; padding: 6px 0; }
+        .accordion-content li {
+            padding: 12px 16px 12px 40px; font-size: 13px; color: #CBD5E1;
+            cursor: pointer; display: flex; align-items: center; gap: 9px;
+            min-height: 44px;
+        }
+        .accordion-content li:hover { background-color: rgba(255,255,255,.05); color: #fff; }
+        .accordion-content li .lesson-num { font-size: 11px; color: #64748B; min-width: 18px; font-weight: 700; }
+        .accordion-content li .duration { margin-left: auto; font-size: 11px; color: #64748B; }
+        .accordion-content li .check { color: var(--success); font-size: 13px; }
+        .accordion-content li.active-lesson {
+            color: #fff; font-weight: 600; background: rgba(0,85,184,.25);
+            border-left: 3px solid var(--accent);
+        }
+
+        /* Backdrop (solo móvil/tablet) */
+        .backdrop {
+            position: fixed; inset: 0; background: rgba(8,14,28,.55);
+            opacity: 0; pointer-events: none; transition: opacity .28s ease;
+            z-index: 350;
+        }
+        .backdrop.show { opacity: 1; pointer-events: auto; }
+
+        /* ============================================================
+           CONTENIDO PRINCIPAL
+           ============================================================ */
+        .main-container { display: flex; flex: 1; min-width: 0; min-height: 0; }
+
+        .content-area {
+            display: flex;
+            flex-direction: column;      /* móvil: apilado */
+            gap: 16px;
+            flex: 1;
+            min-width: 0;
+            padding: 16px;
+            padding-left: max(16px, env(safe-area-inset-left));
+            padding-right: max(16px, env(safe-area-inset-right));
+        }
+
+        .left-column, .right-column {
+            display: flex; flex-direction: column; gap: 16px;
+            min-width: 0; min-height: 0;
+        }
+        .right-column { min-height: 480px; }
+
+        .resizer { display: none; }        /* solo desktop */
+
+        /* ============================================================
+           TARJETAS
+           ============================================================ */
+        .card {
+            background: var(--card); border-radius: var(--radius);
+            box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden;
+        }
+        .card-header {
+            padding: 13px 16px; background: #F1F5F9;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700; font-size: 14px; color: var(--text);
+            display: flex; justify-content: space-between; align-items: center; gap: 10px;
+        }
+        .card-body { padding: 16px; }
+
+        /* ============================================================
+           VIDEO
+           ============================================================ */
+        .video-container {
+            position: relative; background: #000; border-radius: var(--radius);
+            overflow: hidden; box-shadow: var(--shadow-lg);
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* relación 16:9 (alto = 56.25% del ancho) */
+        }
+        .video-placeholder {
+            width: 100%; aspect-ratio: 16 / 9;
+            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #94A3B8; position: relative;
+        }
+        .video-placeholder .play-btn {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: rgba(0,85,184,.9); color: #fff; border: none;
+            font-size: 28px; cursor: pointer; margin-bottom: 14px;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform .18s, background .18s;
+            box-shadow: 0 6px 18px rgba(0,0,0,.4);
+            padding-left: 4px;
+        }
+        .video-placeholder .play-btn:hover { transform: scale(1.07); background: var(--accent-2); }
+        .video-label { font-size: 16px; font-weight: 600; color: #E2E8F0; padding: 0 16px; text-align: center; }
+        .video-meta { font-size: 12px; color: #7C8BA1; margin-top: 6px; }
+        .video-controls {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,.85));
+            padding: 30px 16px 12px; display: flex; align-items: center;
+            justify-content: space-between; color: #fff; font-size: 13px; gap: 10px;
+        }
+        .maximize-btn {
+            background: rgba(255,255,255,.15); border: none; color: #fff;
+            padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;
+            display: flex; align-items: center; gap: 6px; transition: background .18s;
+            min-height: 40px;
+        }
+        .maximize-btn:hover { background: rgba(255,255,255,.3); }
+        .video-container.maximized {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1000; border-radius: 0; width: 100vw; height: 100vh; height: 100dvh;
+            padding-bottom: 0;
+        }
+        .video-container.maximized .video-placeholder { height: 100%; aspect-ratio: auto; }
+        .video-container video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; object-fit: contain;
+        }
+        .video-container .maximize-btn { position: absolute; top: 10px; right: 10px; z-index: 5; }
+
+        /* Acciones de la lección */
+        .lesson-actions {
+            display: flex; justify-content: space-between; align-items: center; gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
+            font-size: 14px; padding: 12px 18px; min-height: 44px;
+            display: inline-flex; align-items: center; gap: 8px;
+            transition: background .18s, transform .05s;
+        }
+        .btn:active { transform: scale(.98); }
+        .btn-outline { background: #fff; color: var(--accent); border: 1.5px solid var(--accent); }
+        .btn-outline:hover { background: #EFF6FF; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: var(--primary-2); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #0EA474; }
+
+        /* ============================================================
+           ANEXOS Y COMENTARIOS
+           ============================================================ */
+        .support-grid { display: flex; flex-direction: column; gap: 16px; }
+        .attachment-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+        .attachment-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 10px 12px; background: #F8FAFC;
+            border: 1px solid var(--border); border-radius: 8px; transition: background .18s;
+        }
+        .attachment-item:hover { background: #F1F5F9; }
+        .attachment-info { display: flex; align-items: center; gap: 12px; font-size: 13px; min-width: 0; }
+        .attachment-info .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-icon {
+            width: 34px; height: 40px; background: var(--primary-2); color: #fff;
+            border-radius: 5px; display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 800; flex-shrink: 0; letter-spacing: .5px;
+        }
+        .download-btn {
+            background: var(--accent); color: #fff; border: none; padding: 9px 14px;
+            border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+            transition: background .18s; flex-shrink: 0; min-height: 38px;
+            text-decoration: none; display: inline-flex; align-items: center;
+        }
+        .download-btn:hover { background: var(--primary-2); }
+
+        .comment-list { display: flex; flex-direction: column; gap: 12px; }
+        .comment-item { display: flex; gap: 10px; font-size: 13px; }
+        .comment-avatar {
+            width: 34px; height: 34px; border-radius: 50%; background: #CBD5E1;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; color: var(--primary); flex-shrink: 0; font-size: 12px;
+        }
+        .comment-body {
+            background: #F8FAFC; padding: 10px 12px; border-radius: 0 10px 10px 10px;
+            border: 1px solid var(--border); flex: 1;
+        }
+        .comment-author { font-weight: 700; font-size: 12px; color: var(--primary); }
+        .comment-text { margin-top: 3px; color: var(--text); }
+        .comment-time { font-size: 11px; color: var(--muted); margin-top: 4px; display: block; }
+        .comment-input-area { margin-top: 12px; display: flex; gap: 8px; }
+        .comment-input-area input {
+            flex: 1; padding: 11px 14px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 14px; outline: none; min-width: 0; font-family: inherit;
+        }
+        .comment-input-area input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,85,184,.12); }
+        .comment-input-area button {
+            background: var(--accent); color: #fff; border: none; padding: 11px 18px;
+            border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;
+        }
+        .comment-input-area button:hover { background: var(--primary-2); }
+
+        /* ============================================================
+           SIMULADOR
+           ============================================================ */
+        .simulator-panel {
+            flex: 1; display: flex; flex-direction: column; background: var(--card);
+            border-radius: var(--radius); border: 1px solid var(--border);
+            box-shadow: var(--shadow); overflow: hidden; min-height: 0;
+        }
+        .simulator-header {
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-2) 100%);
+            color: #fff; padding: 13px 16px; font-weight: 700; font-size: 14px;
+            display: flex; justify-content: space-between; align-items: center; gap: 10px;
+            flex-shrink: 0;
+        }
+        .simulator-badge {
+            background: var(--success); font-size: 10px; padding: 3px 8px;
+            border-radius: 10px; text-transform: uppercase; letter-spacing: .5px; font-weight: 700;
+            flex-shrink: 0;
+        }
+        .simulator-body { flex: 1; display: flex; flex-direction: column; background: #F1F5F9; min-height: 0; position: relative; }
+        .simulator-iframe { width: 100%; height: 100%; border: none; display: block; flex: 1; min-height: 320px; }
+        .simulator-fallback {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 24px; text-align: center; background: #F1F5F9; color: var(--muted); font-size: 13px;
+        }
+        .simulator-fallback .icon { font-size: 46px; margin-bottom: 12px; color: var(--primary-2); }
+        .simulator-fallback a { margin-top: 12px; color: var(--accent); font-weight: 600; text-decoration: none; }
+
+        body.is-resizing { cursor: col-resize; user-select: none; }
+
+        /* ============================================================
+           PIE DE PÁGINA
+           ============================================================ */
+        .app-footer {
+            background: var(--bg-dark);
+            color: #CBD5E1;
+            flex-shrink: 0;
+            padding: 20px max(20px, env(safe-area-inset-right))
+                     calc(20px + env(safe-area-inset-bottom))
+                     max(20px, env(safe-area-inset-left));
+            border-top: 1px solid rgba(255,255,255,.08);
+        }
+        .footer-inner { max-width: 1100px; margin: 0 auto; }
+        .footer-title { color: #fff; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+        .footer-tagline { font-size: 13px; color: #94A3B8; margin-bottom: 14px; max-width: 560px; }
+        .footer-contact { display: flex; flex-direction: column; gap: 9px; font-size: 13px; }
+        .footer-contact a { color: #A9C0E8; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+        .footer-contact a:hover { text-decoration: underline; }
+        .footer-contact .contact-item { display: inline-flex; align-items: center; gap: 8px; }
+
+        /* ============================================================
+           RESPONSIVE · TABLET  (768–1023px)
+           ============================================================ */
+        @media (min-width: 768px) {
+            .content-area { padding: 20px; }
+            .support-grid { flex-direction: row; }
+            .support-grid > * { flex: 1; min-width: 0; }
+            .right-column { min-height: 560px; }
+            .footer-contact { flex-direction: row; flex-wrap: wrap; gap: 20px; }
+        }
+
+        /* ============================================================
+           RESPONSIVE · DESKTOP  (≥1024px)
+           ============================================================ */
+        @media (min-width: 1024px) {
+            body { height: 100vh; height: 100dvh; overflow: hidden; }
+
+            /* Sidebar pasa a panel inline (dentro de .app-body en fila) */
+            .sidebar {
+                position: static; transform: none;
+                width: 0; overflow: hidden; transition: width .3s ease;
+                box-shadow: none; flex-shrink: 0;
+            }
+            .sidebar.open { width: var(--sidebar-w); overflow-y: auto; }
+            .sidebar-close { display: none; }
+            .backdrop { display: none; }
+
+            .content-area { flex-direction: row; overflow: hidden; gap: 0; padding: 16px; }
+            .left-column {
+                flex: 0 0 calc(50% - (var(--resizer-w) / 2));
+                overflow-y: auto;
+                padding-right: 8px;
+            }
+            .right-column {
+                flex: 0 0 calc(50% - (var(--resizer-w) / 2));
+                min-height: 0; padding-left: 8px;
+            }
+            .support-grid { flex-direction: column; }
+
+            /* Divisor arrastrable */
+            .resizer {
+                flex: 0 0 var(--resizer-w); display: flex;
+                align-items: center; justify-content: center;
+                cursor: col-resize; touch-action: none; user-select: none;
+                position: relative;
+            }
+            .resizer::before {
+                content: ''; width: 4px; height: 64px; border-radius: 4px;
+                background-image: radial-gradient(circle, var(--muted) 1.5px, transparent 1.5px);
+                background-size: 4px 8px; background-repeat: repeat-y; background-position: center;
+            }
+            .resizer:hover::before, .resizer.dragging::before {
+                background-image: none; background-color: var(--accent);
+            }
+            .resizer:hover { background-color: rgba(0,85,184,.08); }
+
+            .footer-title, .footer-tagline { display: inline; }
+            .app-footer { padding: 14px 24px; }
+            .footer-title { margin-right: 12px; }
+            .footer-tagline { margin-right: 16px; }
+        }
+
+        /* Focus visible accesible */
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    </style>
+</head>
+<body>
+
+    <!-- ===== HEADER ===== -->
+    <header class="app-header">
+        <div class="header-left">
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button>
+            <div class="brand">
+                <span class="brand-logo">CIATSOFTWARE</span>
+                <span class="brand-sub">Curso PLC Siemens · Plataforma de cursos</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <span class="user-name" id="userName">Juan Pérez</span>
+                <div class="user-avatar">JP</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== BACKDROP (móvil/tablet) ===== -->
+    <div class="backdrop" id="backdrop"></div>
+
+    <!-- ===== CUERPO: sidebar + contenido ===== -->
+    <div class="app-body">
+
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar" aria-label="Contenido del curso">
+            <div class="sidebar-header">
+                <span class="title">Contenido del curso</span>
+                <button class="sidebar-close" id="sidebarClose" aria-label="Cerrar menú">✕</button>
+            </div>
+
+            <div class="course-progress">
+                <div class="row">
+                    <span>Tu avance</span>
+                    <span id="progressLabel">45%</span>
+                </div>
+                <div class="bar"><div class="fill"></div></div>
+            </div>
+
+            <nav class="accordion" id="accordion">
+                <div class="accordion-item active">
+                    <div class="accordion-header" aria-expanded="true">
+                        <span>Módulo 1 · Introducción</span>
+                        <span class="icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li class="active-lesson"><span class="lesson-num">1</span> Bienvenida <span class="duration">12:34</span></li>
+                            <li><span class="lesson-num">2</span> <span class="check">✓</span> Conceptos básicos <span class="duration">09:12</span></li>
+                            <li><span class="lesson-num">3</span> <span class="check">✓</span> Entorno de trabajo <span class="duration">10:45</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" aria-expanded="false">
+                        <span>Módulo 2 · PLC Siemens</span>
+                        <span class="icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li><span class="lesson-num">4</span> Hardware S7-1200 <span class="duration">11:02</span></li>
+                            <li><span class="lesson-num">5</span> Primer programa Ladder <span class="duration">08:37</span></li>
+                            <li><span class="lesson-num">6</span> Variables y memorias <span class="duration">07:58</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" aria-expanded="false">
+                        <span>Recursos adicionales</span>
+                        <span class="icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li>📄 Guía de instalación TIA Portal</li>
+                            <li>📄 Manual de PLC S7-1200</li>
+                            <li>🔗 Enlace al simulador 3D</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" aria-expanded="false">
+                        <span>Mi cuenta</span>
+                        <span class="icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <ul>
+                            <li>👤 Perfil</li>
+                            <li>⚙️ Preferencias</li>
+                            <li>🚪 Cerrar sesión</li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== CONTENIDO ===== -->
+        <div class="main-container">
+            <div class="content-area" id="contentArea">
+
+                <!-- COLUMNA IZQUIERDA -->
+                <div class="left-column" id="leftColumn">
+
+                    <!-- VIDEO -->
+                    <div class="video-container" id="videoContainer">
+                        <video id="lessonVideo" controls playsinline preload="metadata" controlsList="nodownload">
+                            Tu navegador no soporta video HTML5.
+                        </video>
+                        <button class="maximize-btn" id="maximizeBtn">⛶ Maximizar</button>
+                    </div>
+
+                    <!-- ACCIONES DE LA LECCIÓN -->
+                    <div class="lesson-actions">
+                        <button class="btn btn-success" id="completeBtn">✓ Marcar como completada</button>
+                        <button class="btn btn-primary" id="nextBtn">Siguiente lección →</button>
+                    </div>
+
+                    <!-- ANEXOS + COMENTARIOS -->
+                    <div class="support-grid">
+                        <div class="card attachments-panel">
+                            <div class="card-header">
+                                <span>📎 Anexos de la lección</span>
+                                <span style="font-size:12px;color:var(--muted);">3 archivos</span>
+                            </div>
+                            <div class="card-body">
+                                <ul class="attachment-list">
+                                    <li class="attachment-item">
+                                        <div class="attachment-info">
+                                            <div class="file-icon">TXT</div>
+                                            <div style="min-width:0;">
+                                                <div class="name">Anexo 1</div>
+                                                <div style="font-size:11px;color:var(--muted);">Documento de texto</div>
+                                            </div>
+                                        </div>
+                                        <a class="download-btn" href="anexos/anexo1.txt" download>Abrir / Descargar</a>
+                                    </li>
+                                    <li class="attachment-item">
+                                        <div class="attachment-info">
+                                            <div class="file-icon" style="background:var(--warning);">TXT</div>
+                                            <div style="min-width:0;">
+                                                <div class="name">Anexo 2</div>
+                                                <div style="font-size:11px;color:var(--muted);">Documento de texto</div>
+                                            </div>
+                                        </div>
+                                        <a class="download-btn" href="anexos/anexo2.txt" download>Abrir / Descargar</a>
+                                    </li>
+                                    <li class="attachment-item">
+                                        <div class="attachment-info">
+                                            <div class="file-icon" style="background:var(--danger);">PDF</div>
+                                            <div style="min-width:0;">
+                                                <div class="name">Anexo 3</div>
+                                                <div style="font-size:11px;color:var(--muted);">Documento PDF</div>
+                                            </div>
+                                        </div>
+                                        <a class="download-btn" href="anexos/anexo3.pdf" download>Abrir / Descargar</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="card comments-panel">
+                            <div class="card-header"><span>💬 Comentarios del curso</span></div>
+                            <div class="card-body">
+                                <div class="comment-list">
+                                    <div class="comment-item">
+                                        <div class="comment-avatar">MG</div>
+                                        <div class="comment-body">
+                                            <div class="comment-author">María Gómez</div>
+                                            <div class="comment-text">¿El simulador se puede usar sin TIA Portal?</div>
+                                            <span class="comment-time">Hace 2 horas</span>
+                                        </div>
+                                    </div>
+                                    <div class="comment-item">
+                                        <div class="comment-avatar" style="background:var(--accent);color:#fff;">IR</div>
+                                        <div class="comment-body">
+                                            <div class="comment-author">Instructor CIAT</div>
+                                            <div class="comment-text">Sí, el simulador 3D tiene su propio editor Ladder. Lo vemos en la práctica 1.</div>
+                                            <span class="comment-time">Hace 1 hora</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="comment-input-area">
+                                    <input type="text" placeholder="Escribe un comentario o duda...">
+                                    <button>Enviar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DIVISOR (solo desktop) -->
+                <div class="resizer" id="resizer" title="Arrastra para redimensionar"></div>
+
+                <!-- COLUMNA DERECHA: SIMULADOR -->
+                <div class="right-column" id="rightColumn">
+                    <div class="simulator-panel">
+                        <div class="simulator-header">
+                            <span>Simulador PLC 3D</span>
+                            <span class="simulator-badge">En vivo</span>
+                        </div>
+                        <div class="simulator-body" id="simulatorBody">
+                            <iframe
+                                id="simulatorIframe"
+                                class="simulator-iframe"
+                                src="https://www.ciatsoftware.com/Apps/Simulador3D_PLC"
+                                title="Simulador PLC 3D"
+                                allow="fullscreen; clipboard-write; encrypted-media"
+                                referrerpolicy="no-referrer-when-downgrade"
+                            ></iframe>
+
+                            <div class="simulator-fallback" id="simulatorFallback">
+                                <div class="icon">🖥️</div>
+                                <div><strong>El simulador no pudo embeberse</strong></div>
+                                <p style="margin-top:8px; max-width:260px;">
+                                    El sitio del simulador bloquea su visualización en iframe.
+                                </p>
+                                <a href="https://www.ciatsoftware.com/Apps/Simulador3D_PLC" target="_blank" rel="noopener">
+                                    Abrir simulador en nueva pestaña →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PIE DE PÁGINA ===== -->
+    <footer class="app-footer">
+        <div class="footer-inner">
+            <div class="footer-title">Información</div>
+            <div class="footer-tagline">Comunícate con nosotros, tendremos una solución acorde a tus necesidades.</div>
+            <div class="footer-contact">
+                <a href="tel:+527821897368" class="contact-item">📞 +52 782 189 7368 / +52 228 182 7906</a>
+                <a href="mailto:ciatsoftware@gmail.com" class="contact-item">✉️ ciatsoftware@gmail.com</a>
+                <span class="contact-item">🕒 Lunes a sábado (9am-8pm)</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="hls.min.js"></script>
+    <script>
+        (function () {
+            const DESKTOP = window.matchMedia('(min-width: 1024px)');
+
+            /* ---------- Reproductor de video (HLS) ---------- */
+            const lessonVideo = document.getElementById('lessonVideo');
+            const videoSrc = 'anexos/hls/video.m3u8';
+            if (window.Hls && Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(videoSrc);
+                hls.attachMedia(lessonVideo);
+            } else if (lessonVideo.canPlayType('application/vnd.apple.mpegurl')) {
+                lessonVideo.src = videoSrc;
+            }
+
+            /* ---------- Sidebar (drawer en móvil / panel en desktop) ---------- */
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebarClose = document.getElementById('sidebarClose');
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('backdrop');
+
+            function openSidebar() {
+                sidebar.classList.add('open');
+                backdrop.classList.add('show');
+                menuToggle.setAttribute('aria-expanded', 'true');
+            }
+            function closeSidebar() {
+                sidebar.classList.remove('open');
+                backdrop.classList.remove('show');
+                menuToggle.setAttribute('aria-expanded', 'false');
+            }
+
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+            });
+            sidebarClose.addEventListener('click', closeSidebar);
+            backdrop.addEventListener('click', closeSidebar);
+
+            // Al pasar a desktop, limpiamos el estado del drawer
+            DESKTOP.addEventListener('change', (e) => { if (e.matches) closeSidebar(); });
+
+            // Cierra con tecla Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeSidebar();
+            });
+
+            /* ---------- Acordeón ---------- */
+            document.querySelectorAll('.accordion-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const item = header.parentElement;
+                    const isActive = item.classList.toggle('active');
+                    header.setAttribute('aria-expanded', String(isActive));
+                });
+            });
+
+            /* ---------- Maximizar video (Fullscreen API + fallback CSS) ---------- */
+            const maximizeBtn = document.getElementById('maximizeBtn');
+            const videoContainer = document.getElementById('videoContainer');
+
+            maximizeBtn.addEventListener('click', () => {
+                if (!videoContainer.classList.contains('maximized') &&
+                    videoContainer.requestFullscreen) {
+                    videoContainer.requestFullscreen().catch(() => toggleMaximizeClass());
+                } else if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => toggleMaximizeClass());
+                } else {
+                    toggleMaximizeClass();
+                }
+            });
+            document.addEventListener('fullscreenchange', () => {
+                if (!document.fullscreenElement) {
+                    videoContainer.classList.remove('maximized');
+                    maximizeBtn.textContent = '⛶ Maximizar';
+                }
+            });
+            function toggleMaximizeClass() {
+                const maximized = videoContainer.classList.toggle('maximized');
+                maximizeBtn.textContent = maximized ? '✕ Restaurar' : '⛶ Maximizar';
+            }
+
+            /* ---------- Acciones de lección (demo) ---------- */
+            document.getElementById('completeBtn').addEventListener('click', function () {
+                this.innerHTML = '✓ Lección completada';
+                this.style.backgroundColor = '#0EA474';
+                this.disabled = true;
+            });
+            document.getElementById('nextBtn').addEventListener('click', () => {
+                alert('Aquí navegaría a la siguiente lección (demo).');
+            });
+
+            /* ---------- Divisor arrastrable (pointer events = mouse + touch) ---------- */
+            const resizer = document.getElementById('resizer');
+            const leftColumn = document.getElementById('leftColumn');
+            const rightColumn = document.getElementById('rightColumn');
+            const contentArea = document.getElementById('contentArea');
+            const MIN = 30, MAX = 70, RW = 10;
+            let resizing = false;
+
+            function applySplit(leftPercent) {
+                leftPercent = Math.max(MIN, Math.min(MAX, leftPercent));
+                const rightPercent = 100 - leftPercent;
+                leftColumn.style.flex = '0 0 calc(' + leftPercent + '% - ' + (RW / 2) + 'px)';
+                rightColumn.style.flex = '0 0 calc(' + rightPercent + '% - ' + (RW / 2) + 'px)';
+            }
+
+            resizer.addEventListener('pointerdown', (e) => {
+                if (!DESKTOP.matches) return;
+                resizing = true;
+                resizer.classList.add('dragging');
+                document.body.classList.add('is-resizing');
+                try { resizer.setPointerCapture(e.pointerId); } catch (_) {}
+            });
+            resizer.addEventListener('pointermove', (e) => {
+                if (!resizing) return;
+                const rect = contentArea.getBoundingClientRect();
+                const cs = getComputedStyle(contentArea);
+                const padL = parseFloat(cs.paddingLeft);
+                const padR = parseFloat(cs.paddingRight);
+                const available = rect.width - padL - padR - RW;
+                const cursorX = e.clientX - rect.left - padL;
+                applySplit((cursorX / available) * 100);
+            });
+            function endResize() {
+                if (!resizing) return;
+                resizing = false;
+                resizer.classList.remove('dragging');
+                document.body.classList.remove('is-resizing');
+            }
+            resizer.addEventListener('pointerup', endResize);
+            resizer.addEventListener('pointercancel', endResize);
+
+            /* ---------- Fallback del simulador ---------- */
+            const iframe = document.getElementById('simulatorIframe');
+            const fallback = document.getElementById('simulatorFallback');
+            let loaded = false;
+            iframe.addEventListener('load', () => { loaded = true; });
+            setTimeout(() => {
+                if (!loaded) {
+                    iframe.style.display = 'none';
+                    fallback.style.display = 'flex';
+                }
+            }, 4000);
+        })();
+    </script>
+</body>
+</html>

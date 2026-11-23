@@ -1,0 +1,74 @@
+# CONTEXTO MAESTRO DEL PROYECTO: PLATAFORMA CIATSOFTWARE
+
+## 1. VISIÓN GENERAL DEL NEGOCIO
+Desarrollo de una plataforma web para CIATSoftware (capacitación en automatización, PLC, robótica).
+- Modelo de negocio: PAGO ÚNICO (No hay suscripciones, no hay cobros recurrentes).
+- El alumno paga una vez y obtiene acceso a: Curso grabado (8 módulos), Simulador 3D (6 prácticas) y "Valeria" (IA de ventas y tutoría).
+- Lanzamiento global (inicialmente Español e Inglés).
+
+## 2. STACK TECNOLÓGICO Y ARQUITECTURA
+- Frontend: Angular (Componentes Standalone, Monorepo con Nx).
+- Backend: ASP.NET Core (Web API, .NET 8/9, Arquitectura DDD).
+- Base de Datos: SQL Server.
+- Hosting: SmarterASP.NET (Plan Premium, 3GB RAM).
+- IA / Desarrollo: OpenCode + DeepSeek Flash + OpenSpec (Spec-Driven Development).
+
+## 3. ARQUITECTURA DEL BACKEND (.NET Core)
+- Enfoque: Monolito Modular (NO microservicios físicos por limitaciones de RAM en el hosting).
+- Organización interna (Bounded Contexts / DDD):
+  1. Auth & Usuarios (Login, perfiles, idiomas).
+  2. Pagos (Mercado Pago, PayPal, Webhooks).
+  3. Cursos (Catálogo, lecciones, metadatos).
+  4. Simulador (Generación de licencias/tokens, progreso).
+  5. Constancias (Generación de PDF, folios, QR).
+  6. Valeria (Lógica de chat/IA).
+- Autenticación: JWT (Access Token corto + Refresh Token). Se guardará en Cookies con dominio padre (.ciatsoftware.com) para compartir sesión entre subdominios.
+- Infraestructura: Se debe evitar el uso de BackgroundServices pesados por las limitaciones del hosting; usar webhooks o colas externas para procesos asíncronos.
+
+## 4. ARQUITECTURA DEL FRONTEND (Angular)
+- Enfoque: Módulo por subdominio (Aplicaciones separadas, despliegue independiente).
+- Subdominios planificados:
+  - app.ciatsoftware.com (Portal, Login, Dashboard).
+  - curso.ciatsoftware.com (Reproductor, material).
+  - simulador.ciatsoftware.com (Contenedor web del simulador).
+  - admin.ciatsoftware.com (Carga de contenido).
+- Monorepo (Nx): Para compartir librerías (ej. libs/shared-ui) donde vivirá el HeaderComponent, Footer, AuthService y los archivos de traducción base.
+- i18n: Uso de @ngx-translate/core. Archivos JSON por idioma. El backend leerá el header Accept-Language.
+- Rendimiento: Uso de Shared Vendor Bundle (para caché de Angular/RxJS entre subdominios) y Lazy Loading de rutas.
+
+## 5. BASE DE DATOS (SQL Server)
+- Solo guarda metadatos (nombres, rutas de archivos, estados de pago, progreso, etc.).
+- Internacionalización (i18n) en BD: Tablas de traducción para contenido dinámico (ej. CursoTraducciones: CursoId, Idioma, Titulo, Descripcion).
+- Los archivos binarios (PDFs, imágenes) NO van en la BD.
+
+## 6. PROTECCIÓN DE VIDEO (NETFLIX STYLE)
+- El video NO se aloja ni se transmite desde SmarterASP.
+- Proveedor externo recomendado: VdoCipher o Mux (con DRM).
+- DRM: Obligatorio (Widevine/PlayReady/FairPlay) para bloquear la pantalla en negro ante intentos de captura de pantalla/grabación.
+- Flujo: Angular pide token a la API (.NET) -> API valida pago -> API pide token temporal al proveedor de video -> Angular lo usa en el reproductor.
+- PDFs y documentos de apoyo: Se guardan en almacenamiento de objetos (Azure Blob / AWS S3) y la API devuelve URLs firmadas temporales.
+
+## 7. PAGOS (MERCADO PAGO / PAYPAL)
+- Pasarela principal: Mercado Pago (Checkout Bricks).
+- Flujo de Pago Único:
+  1. Angular renderiza el Brick (Card Payment Brick) con la Public Key.
+  2. El usuario ingresa tarjeta. El Brick tokeniza directo con Mercado Pago y devuelve un "card_token" (un solo uso).
+  3. Angular envía el card_token a la API .NET.
+  4. La API .NET usa el Access Token secreto para crear el pago en Mercado Pago.
+  5. El acceso al alumno (curso, simulador, Valeria) SOLO se activa cuando la API .NET recibe la confirmación vía WEBHOOK de Mercado Pago (estado "approved"). No confiar en la respuesta síncrona.
+
+## 8. SIMULADOR Y CONSTANCIAS
+- Simulador: Aplicación (probablemente de escritorio) que requiere licencia. El alumno ingresa sus credenciales de la plataforma; el simulador las valida contra la API (.NET) y esta le devuelve un token de licencia (ej. válido por 30 días). Límite de dispositivos por cuenta.
+- Constancias: Generación automática en PDF (usando QuestPDF en .NET) al aprobar el proyecto final. Debe incluir un folio único y un código QR que apunte a un endpoint público de validación (ej. api.ciatsoftware.com/verificar/folio).
+
+## 9. INTEGRACIÓN CON VALERIA (IA)
+- Valeria operará vía WhatsApp Business API y dentro de la plataforma web.
+- Prompt de sistema debe ser multilingüe (responde en el idioma del usuario).
+- Traspaso de ventas a asesores humanos vía CRM.
+
+## INSTRUCCIONES PARA EL MODELO DE IA EN OPENCODE:
+A partir de este contexto, asume el rol de Arquitecto de Software y Desarrollador Senior. Cuando te pida generar código o especificaciones (OpenSpec), respeta estrictamente:
+1. No inventes suscripciones, el modelo es Pago Único.
+2. Usa Angular Standalone (no NgModules) y .NET Core DDD.
+3. Ten en cuenta que el backend correrá en SmarterASP.NET (evita características que consuman RAM excesiva o procesos en background persistentes).
+4. Cualquier lógica de video debe asumir que el archivo está fuera de nuestro servidor (DRM externo).

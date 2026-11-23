@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIATSOFTWARE - Reproductor de Lección</title>
+    <style>
+        :root {
+            --ciat-primary: #0A2A5E;
+            --ciat-primary-light: #1A4A8A;
+            --ciat-accent: #0055B8;
+            --ciat-bg-dark: #0F172A;
+            --ciat-bg-light: #F8FAFC;
+            --ciat-border: #E2E8F0;
+            --ciat-text: #1E293B;
+            --ciat-text-muted: #64748B;
+            --ciat-white: #FFFFFF;
+            --ciat-success: #10B981;
+            --ciat-warning: #F59E0B;
+            --sidebar-width: 280px;
+            --resizer-width: 10px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--ciat-bg-light);
+            color: var(--ciat-text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--ciat-primary);
+            color: var(--ciat-white);
+            padding: 0 24px;
+            height: 60px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .menu-toggle {
+            background: none; border: none; color: var(--ciat-white);
+            font-size: 24px; cursor: pointer; padding: 4px; border-radius: 4px;
+        }
+        .menu-toggle:hover { background-color: rgba(255,255,255,0.1); }
+        .brand-logo { font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .user-info { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+        .user-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background-color: var(--ciat-accent);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 14px;
+        }
+
+        /* ===== CONTENEDOR PRINCIPAL ===== */
+        .main-container {
+            display: flex; flex: 1; overflow: hidden; position: relative;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 0; background-color: var(--ciat-bg-dark); color: var(--ciat-white);
+            overflow: hidden; transition: width 0.3s ease; flex-shrink: 0;
+            display: flex; flex-direction: column;
+        }
+        .sidebar.open { width: var(--sidebar-width); overflow-y: auto; }
+        .sidebar-header {
+            padding: 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 14px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1px; color: #94A3B8;
+        }
+        .accordion-item { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .accordion-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 16px; cursor: pointer; font-size: 14px;
+            font-weight: 500; transition: background 0.2s;
+        }
+        .accordion-header:hover { background-color: rgba(255,255,255,0.05); }
+        .accordion-icon { font-size: 12px; transition: transform 0.3s; }
+        .accordion-item.active .accordion-icon { transform: rotate(90deg); }
+        .accordion-content {
+            max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+            background-color: rgba(0,0,0,0.2);
+        }
+        .accordion-item.active .accordion-content { max-height: 500px; }
+        .accordion-content ul { list-style: none; padding: 8px 0; }
+        .accordion-content li {
+            padding: 10px 16px 10px 36px; font-size: 13px; color: #CBD5E1;
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+        }
+        .accordion-content li:hover { background-color: rgba(255,255,255,0.05); color: var(--ciat-white); }
+        .accordion-content li.active-lesson { color: var(--ciat-white); font-weight: 600; }
+        .accordion-content li .check { color: var(--ciat-success); font-size: 12px; }
+
+        /* ===== ÁREA DE CONTENIDO (dos columnas redimensionables) ===== */
+        .content-area {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            padding: 16px;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .left-column {
+            flex: 0 0 calc(50% - (var(--resizer-width) / 2));
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .right-column {
+            flex: 0 0 calc(50% - (var(--resizer-width) / 2));
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        /* ===== DIVISOR ARRASTRABLE ===== */
+        .resizer {
+            flex: 0 0 var(--resizer-width);
+            cursor: col-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background-color: transparent;
+            transition: background-color 0.2s;
+            user-select: none;
+        }
+
+        .resizer::before {
+            content: '';
+            width: 4px;
+            height: 60px;
+            border-radius: 4px;
+            background-image: radial-gradient(circle, var(--ciat-text-muted) 1.5px, transparent 1.5px);
+            background-size: 4px 8px;
+            background-repeat: repeat-y;
+            background-position: center;
+            transition: background-color 0.2s;
+        }
+
+        .resizer:hover::before,
+        .resizer.dragging::before {
+            background-image: none;
+            background-color: var(--ciat-accent);
+        }
+
+        .resizer:hover,
+        .resizer.dragging {
+            background-color: rgba(0, 85, 184, 0.08);
+        }
+
+        /* ===== TARJETAS ===== */
+        .card {
+            background: var(--ciat-white); border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--ciat-border); overflow: hidden;
+        }
+        .card-header {
+            padding: 12px 16px; background-color: #F1F5F9;
+            border-bottom: 1px solid var(--ciat-border);
+            font-weight: 600; font-size: 14px; color: var(--ciat-text);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .card-body { padding: 16px; }
+
+        /* ===== VIDEO ===== */
+        .video-container {
+            position: relative; background-color: #000; border-radius: 8px;
+            overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .video-placeholder {
+            width: 100%; aspect-ratio: 16 / 9;
+            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; color: #94A3B8; position: relative;
+        }
+        .video-placeholder .play-icon {
+            font-size: 64px; color: var(--ciat-accent); margin-bottom: 12px;
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .video-placeholder .play-icon:hover { transform: scale(1.1); }
+        .video-placeholder .video-label { font-size: 16px; font-weight: 500; color: #E2E8F0; }
+        .video-controls {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 12px 16px; display: flex; align-items: center;
+            justify-content: space-between; color: var(--ciat-white); font-size: 13px;
+        }
+        .maximize-btn {
+            background: rgba(255,255,255,0.15); border: none; color: var(--ciat-white);
+            padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+            display: flex; align-items: center; gap: 6px; transition: background 0.2s;
+        }
+        .maximize-btn:hover { background: rgba(255,255,255,0.3); }
+        .video-container.maximized {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 9999; border-radius: 0;
+        }
+
+        /* ===== ANEXOS Y COMENTARIOS ===== */
+        .bottom-section { display: flex; gap: 16px; min-height: 220px; }
+        .attachments-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .comments-panel { flex: 1.5; display: flex; flex-direction: column; min-width: 0; }
+        .attachment-list {
+            list-style: none; display: flex; flex-direction: column; gap: 10px;
+        }
+        .attachment-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; background-color: #F8FAFC;
+            border: 1px solid var(--ciat-border); border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .attachment-item:hover { background-color: #F1F5F9; }
+        .attachment-info { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+        .file-icon {
+            width: 32px; height: 32px; background-color: var(--ciat-primary-light);
+            color: var(--ciat-white); border-radius: 4px; display: flex;
+            align-items: center; justify-content: center; font-size: 10px; font-weight: bold;
+            flex-shrink: 0;
+        }
+        .download-btn {
+            background-color: var(--ciat-accent); color: var(--ciat-white);
+            border: none; padding: 6px 14px; border-radius: 4px; font-size: 12px;
+            font-weight: 500; cursor: pointer; transition: background 0.2s;
+        }
+        .download-btn:hover { background-color: var(--ciat-primary); }
+        .comment-list {
+            display: flex; flex-direction: column; gap: 12px;
+            max-height: 180px; overflow-y: auto;
+        }
+        .comment-item { display: flex; gap: 10px; font-size: 13px; }
+        .comment-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background-color: #CBD5E1;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: var(--ciat-primary); flex-shrink: 0; font-size: 12px;
+        }
+        .comment-body {
+            background-color: #F8FAFC; padding: 10px 12px;
+            border-radius: 0 8px 8px 8px; border: 1px solid var(--ciat-border); flex: 1;
+        }
+        .comment-author { font-weight: 600; font-size: 12px; color: var(--ciat-primary); }
+        .comment-text { margin-top: 2px; color: var(--ciat-text); }
+        .comment-time { font-size: 11px; color: var(--ciat-text-muted); margin-top: 4px; display: block; }
+        .comment-input-area { margin-top: 12px; display: flex; gap: 8px; }
+        .comment-input-area input {
+            flex: 1; padding: 8px 12px; border: 1px solid var(--ciat-border);
+            border-radius: 4px; font-size: 13px; outline: none;
+        }
+        .comment-input-area input:focus { border-color: var(--ciat-accent); }
+        .comment-input-area button {
+            background-color: var(--ciat-accent); color: var(--ciat-white);
+            border: none; padding: 8px 16px; border-radius: 4px;
+            cursor: pointer; font-size: 13px;
+        }
+
+        /* ===== SIMULADOR ===== */
+        .simulator-panel {
+            flex: 1; display: flex; flex-direction: column; background: var(--ciat-white);
+            border-radius: 8px; border: 1px solid var(--ciat-border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden;
+            min-height: 0;
+        }
+        .simulator-header {
+            background: linear-gradient(90deg, var(--ciat-primary) 0%, var(--ciat-primary-light) 100%);
+            color: var(--ciat-white); padding: 12px 16px; font-weight: 600;
+            font-size: 14px; display: flex; justify-content: space-between;
+            align-items: center; flex-shrink: 0;
+        }
+        .simulator-badge {
+            background-color: var(--ciat-success); font-size: 10px;
+            padding: 2px 6px; border-radius: 10px; text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .simulator-body {
+            flex: 1; display: flex; flex-direction: column;
+            background-color: #F1F5F9; min-height: 0; position: relative;
+        }
+        .simulator-iframe {
+            width: 100%; height: 100%; border: none; display: block; flex: 1;
+        }
+        .simulator-fallback {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: none; flex-direction: column; align-items: center;
+            justify-content: center; padding: 24px; text-align: center;
+            background: #F1F5F9; color: var(--ciat-text-muted); font-size: 13px;
+        }
+        .simulator-fallback .icon { font-size: 48px; margin-bottom: 12px; color: var(--ciat-primary-light); }
+        .simulator-fallback a {
+            margin-top: 12px; color: var(--ciat-accent); font-weight: 600;
+            text-decoration: none;
+        }
+        .simulator-fallback a:hover { text-decoration: underline; }
+
+        /* Bloquea transiciones mientras se arrastra */
+        body.is-resizing .left-column,
+        body.is-resizing .right-column {
+            transition: none !important;
+        }
+        body.is-resizing {
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+    </style>
+</head>
+<body>
+
+    <!-- ===== HEADER ===== -->
+    <header class="app-header">
+        <div class="header-left">
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
+            <div class="brand-logo">CIATSOFTWARE</div>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <span>Juan Pérez</span>
+                <div class="user-avatar">JP</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== CONTENEDOR PRINCIPAL ===== -->
+    <div class="main-container">
+
+        <!-- SIDEBAR / ACORDEÓN -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">Contenido del Curso</div>
+
+            <div class="accordion-item active">
+                <div class="accordion-header">
+                    <span>Módulo 1: Introducción</span>
+                    <span class="accordion-icon">▶</span>
+                </div>
+                <div class="accordion-content">
+                    <ul>
+                        <li class="active-lesson">Lección 1: Bienvenida</li>
+                        <li><span class="check">✓</span> Lección 2: Conceptos básicos</li>
+                        <li><span class="check">✓</span> Lección 3: Entorno de trabajo</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <div class="accordion-header">
+                    <span>Módulo 2: PLC Siemens</span>
+                    <span class="accordion-icon">▶</span>
+                </div>
+                <div class="accordion-content">
+                    <ul>
+                        <li>Lección 4: Hardware S7-1200</li>
+                        <li>Lección 5: Primer programa Ladder</li>
+                        <li>Lección 6: Variables y memorias</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <div class="accordion-header">
+                    <span>Recursos Adicionales</span>
+                    <span class="accordion-icon">▶</span>
+                </div>
+                <div class="accordion-content">
+                    <ul>
+                        <li>📄 Guía de instalación TIA Portal</li>
+                        <li>📄 Manual de PLC S7-1200</li>
+                        <li>🔗 Enlace al simulador 3D</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <div class="accordion-header">
+                    <span>Mi Cuenta</span>
+                    <span class="accordion-icon">▶</span>
+                </div>
+                <div class="accordion-content">
+                    <ul>
+                        <li>👤 Perfil</li>
+                        <li>⚙️ Preferencias</li>
+                        <li>🚪 Cerrar Sesión</li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ÁREA DE CONTENIDO -->
+        <div class="content-area" id="contentArea">
+
+            <!-- COLUMNA IZQUIERDA: Video + Anexos/Comentarios -->
+            <div class="left-column" id="leftColumn">
+
+                <div class="video-container" id="videoContainer">
+                    <div class="video-placeholder">
+                        <div class="play-icon">▶</div>
+                        <div class="video-label">Lección 1: Bienvenida al curso</div>
+                    </div>
+                    <div class="video-controls">
+                        <span>00:00 / 12:34</span>
+                        <button class="maximize-btn" id="maximizeBtn">⛶ Maximizar</button>
+                    </div>
+                </div>
+
+                <div class="bottom-section">
+                    <div class="card attachments-panel">
+                        <div class="card-header">
+                            <span>📎 Anexos de la lección</span>
+                            <span style="font-size:12px; color:var(--ciat-text-muted);">2 archivos</span>
+                        </div>
+                        <div class="card-body">
+                            <ul class="attachment-list">
+                                <li class="attachment-item">
+                                    <div class="attachment-info">
+                                        <div class="file-icon">PDF</div>
+                                        <div>
+                                            <div style="font-weight:600;">Guía de práctica 1</div>
+                                            <div style="font-size:11px; color:var(--ciat-text-muted);">1.2 MB</div>
+                                        </div>
+                                    </div>
+                                    <button class="download-btn">Descargar</button>
+                                </li>
+                                <li class="attachment-item">
+                                    <div class="attachment-info">
+                                        <div class="file-icon" style="background-color: var(--ciat-warning);">PDF</div>
+                                        <div>
+                                            <div style="font-weight:600;">Diagrama de flujo Ladder</div>
+                                            <div style="font-size:11px; color:var(--ciat-text-muted);">850 KB</div>
+                                        </div>
+                                    </div>
+                                    <button class="download-btn">Descargar</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card comments-panel">
+                        <div class="card-header">
+                            <span>💬 Comentarios del curso</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="comment-list">
+                                <div class="comment-item">
+                                    <div class="comment-avatar">MG</div>
+                                    <div class="comment-body">
+                                        <div class="comment-author">María Gómez</div>
+                                        <div class="comment-text">¿El simulador se puede usar sin TIA Portal?</div>
+                                        <span class="comment-time">Hace 2 horas</span>
+                                    </div>
+                                </div>
+                                <div class="comment-item">
+                                    <div class="comment-avatar" style="background-color: var(--ciat-accent); color: white;">IR</div>
+                                    <div class="comment-body">
+                                        <div class="comment-author">Instructor CIAT</div>
+                                        <div class="comment-text">Sí, el simulador 3D tiene su propio editor Ladder. En la práctica 1 lo explicamos.</div>
+                                        <span class="comment-time">Hace 1 hora</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="comment-input-area">
+                                <input type="text" placeholder="Escribe un comentario o duda...">
+                                <button>Enviar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DIVISOR ARRASTRABLE -->
+            <div class="resizer" id="resizer" title="Arrastra para redimensionar"></div>
+
+            <!-- COLUMNA DERECHA: Simulador -->
+            <div class="right-column" id="rightColumn">
+                <div class="simulator-panel">
+                    <div class="simulator-header">
+                        <span>Simulador PLC 3D</span>
+                        <span class="simulator-badge">En vivo</span>
+                    </div>
+                    <div class="simulator-body" id="simulatorBody">
+                        <iframe
+                            id="simulatorIframe"
+                            class="simulator-iframe"
+                            src="https://www.ciatsoftware.com/Apps/Simulador3D_PLC"
+                            title="Simulador PLC 3D"
+                            allow="fullscreen; clipboard-write; encrypted-media"
+                            referrerpolicy="no-referrer-when-downgrade"
+                        ></iframe>
+
+                        <!-- Fallback si el iframe no puede embeberse -->
+                        <div class="simulator-fallback" id="simulatorFallback">
+                            <div class="icon">🖥️</div>
+                            <div><strong>El simulador no pudo embeberse</strong></div>
+                            <p style="margin-top:8px; max-width: 260px;">
+                                El sitio del simulador está bloqueando su visualización en iframe.
+                            </p>
+                            <a href="https://www.ciatsoftware.com/Apps/Simulador3D_PLC"
+                               target="_blank" rel="noopener">
+                                Abrir simulador en nueva pestaña →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===== JAVASCRIPT ===== -->
+    <script>
+        /* ---------- Sidebar ---------- */
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+
+        /* ---------- Acordeón ---------- */
+        document.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', () => {
+                header.parentElement.classList.toggle('active');
+            });
+        });
+
+        /* ---------- Maximizar video ---------- */
+        const maximizeBtn = document.getElementById('maximizeBtn');
+        const videoContainer = document.getElementById('videoContainer');
+        maximizeBtn.addEventListener('click', () => {
+            videoContainer.classList.toggle('maximized');
+            maximizeBtn.textContent = videoContainer.classList.contains('maximized')
+                ? '✕ Restaurar'
+                : '⛶ Maximizar';
+        });
+
+        /* ---------- Divisor arrastrable ---------- */
+        const resizer = document.getElementById('resizer');
+        const leftColumn = document.getElementById('leftColumn');
+        const rightColumn = document.getElementById('rightColumn');
+        const contentArea = document.getElementById('contentArea');
+
+        const MIN_PERCENT = 30;
+        const MAX_PERCENT = 70;
+        const RESIZER_WIDTH = 10;
+
+        let isResizing = false;
+
+        function applySplit(leftPercent) {
+            // Clamp entre 30% y 70%
+            leftPercent = Math.max(MIN_PERCENT, Math.min(MAX_PERCENT, leftPercent));
+            const rightPercent = 100 - leftPercent;
+
+            // flex-basis: calc(X% - resizer/2) para que ambas columnas + divisor sumen 100%
+            leftColumn.style.flex = `0 0 calc(${leftPercent}% - ${RESIZER_WIDTH / 2}px)`;
+            rightColumn.style.flex = `0 0 calc(${rightPercent}% - ${RESIZER_WIDTH / 2}px)`;
+        }
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            resizer.classList.add('dragging');
+            document.body.classList.add('is-resizing');
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const containerRect = contentArea.getBoundingClientRect();
+            const style = getComputedStyle(contentArea);
+            const paddingLeft = parseFloat(style.paddingLeft);
+            const paddingRight = parseFloat(style.paddingRight);
+
+            // Ancho disponible = total - paddings - divisor
+            const availableWidth =
+                containerRect.width - paddingLeft - paddingRight - RESIZER_WIDTH;
+
+            // Posición del cursor relativa al área útil
+            const cursorX = e.clientX - containerRect.left - paddingLeft;
+
+            let leftPercent = (cursorX / availableWidth) * 100;
+            applySplit(leftPercent);
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isResizing) return;
+            isResizing = false;
+            resizer.classList.remove('dragging');
+            document.body.classList.remove('is-resizing');
+        });
+
+        /* Re-calcular al cambiar el tamaño de la ventana manteniendo proporción */
+        window.addEventListener('resize', () => {
+            // Opcional: re-aplicar el último split para que no se desborde el iframe
+            // (las columnas ya son flex, así que no requiere ajuste manual)
+        });
+
+        /* ---------- Fallback del simulador ----------
+           Detectamos si el iframe no cargó correctamente (X-Frame-Options / CSP) */
+        const simulatorIframe = document.getElementById('simulatorIframe');
+        const simulatorFallback = document.getElementById('simulatorFallback');
+
+        let iframeLoaded = false;
+
+        simulatorIframe.addEventListener('load', () => {
+            iframeLoaded = true;
+        });
+
+        // Si en 4s no cargó, mostramos el fallback
+        setTimeout(() => {
+            if (!iframeLoaded) {
+                simulatorIframe.style.display = 'none';
+                simulatorFallback.style.display = 'flex';
+            }
+        }, 4000);
+    </script>
+</body>
+</html>
