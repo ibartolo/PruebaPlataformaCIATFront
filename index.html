@@ -578,6 +578,7 @@
                     <!-- VIDEO -->
                     <div class="video-container" id="videoContainer">
                         <video id="lessonVideo" controls playsinline preload="metadata" controlsList="nodownload">
+                            <source src="anexos/video.mp4" type="video/mp4">
                             Tu navegador no soporta video HTML5.
                         </video>
                         <button class="maximize-btn" id="maximizeBtn">⛶ Maximizar</button>
@@ -713,21 +714,9 @@
         </div>
     </footer>
 
-    <script src="hls.min.js"></script>
     <script>
         (function () {
             const DESKTOP = window.matchMedia('(min-width: 1024px)');
-
-            /* ---------- Reproductor de video (HLS) ---------- */
-            const lessonVideo = document.getElementById('lessonVideo');
-            const videoSrc = 'anexos/hls/video.m3u8';
-            if (window.Hls && Hls.isSupported()) {
-                const hls = new Hls();
-                hls.loadSource(videoSrc);
-                hls.attachMedia(lessonVideo);
-            } else if (lessonVideo.canPlayType('application/vnd.apple.mpegurl')) {
-                lessonVideo.src = videoSrc;
-            }
 
             /* ---------- Sidebar (drawer en móvil / panel en desktop) ---------- */
             const menuToggle = document.getElementById('menuToggle');
